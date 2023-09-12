@@ -43,11 +43,8 @@
 
 </body>
 <script>
-    // var str = "C:/Users/16873/Desktop/";
     var str = "img/device.svg";
     var time = null;
-    var svgDoc = null;
-    var arr = [];
     var svgRes = null;
     var excelRes = null;
     var tableRes = [];
@@ -254,9 +251,6 @@
               const data = e.target.result;
               const workbook = XLSX.read(data, {type: 'binary'});
               var sheetName = workbook.SheetNames[0];
-              // const list = '';
-              // const listNew = list.concat(XLSX.utils.sheet_to_json(workbook.Sheets['sheets1'], {header: 1}))
-              // console.log('listNew = ' + listNew);
               const res = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {header: 1});
               excelRes = res.map((val, index) => {
                   var obj = {};
