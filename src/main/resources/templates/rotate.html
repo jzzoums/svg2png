@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Title</title>
+<!--  <script src="../static/js/jQuery-2.1.4.min.js"></script>-->
+</head>
+<style>
+    .outer {
+        width: 100px;
+        height: 100px;
+        background-color: green;
+        margin: 200px;
+        position: relative;
+    }
+    /*  以右部旋转150deg 红色为基点 */
+    .inner {
+        transform: scale(0.5);
+        transform-origin: 0 0;
+        width: 100%;
+        height: 100%;
+        background-color: blue;
+    }
+    .inner:nth-child(2) {
+        width: 5px;
+        height: 5px;
+        background-color: red;
+        transform: none;
+        position: absolute;
+        top: 47.5px;
+        left: 97.5px;
+    }
+</style>
+<body>
+<div class="outer">
+  <div class="inner" dep="arthur">
+    <p>first</p>
+    <p>second</p>
+    <p>last</p>
+  </div>
+  <div class="inner"></div>
+</div>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1">
+  <text x="0" y="15" fill="red"
+        transform="rotate(30 20,40)">I
+    love SVG</text>
+</svg>
+<!--<script>-->
+<!--  $(function () {-->
+<!--      $("*[dep='arthur'] p:nth-child(2)").css('color', 'yellow');-->
+<!--  });-->
+<!--</script>-->
+</body>
+</html>

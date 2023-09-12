@@ -1,0 +1,15 @@
+server:
+  port: 8081
+minio:
+  endpoint: http://192.168.22.53:9000
+  accessKey: admin
+  secretKey: admin123
+  bucketName: arthur
+spring:
+  # 配置文件上传大小限制
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+svg:
+  labels: dp_tag_label,index_tag_label,name_tag_label,anchor_point_tag

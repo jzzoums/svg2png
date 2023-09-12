@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Test</title>
+  <script src="https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js"></script>
+</head>
+<body>
+Welcome to test page!
+<!--<embed type="image/svg+xml" id="svg-content" width="100%" height="500px" src="C:/Users/16873/Desktop/device.svg">-->
+<embed type="image/svg+xml" id="svg-content" width="100%" height="500px" src="/img/device.svg">
+</body>
+<script>
+  $(function () {
+      var textEle = $('#svg10013').attr('id');
+      // var textEle = document.getElementById('svg-content');
+      console.log("----------");
+      console.log(textEle);
+      $("*[dp_tag_label]").each(function () {
+          var val = $(this).attr('dp_tag_label');
+          console.log(val);
+      });
+  });
+
+</script>
+</html>

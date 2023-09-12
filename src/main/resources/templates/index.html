@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+<head>
+  <meta charset="UTF-8">
+  <title>Index</title>
+  <script th:src="@{/js/jQuery-2.1.4.min.js}"></script>
+  <script th:src="@{/js/jquery.dataTables.min.js}"></script>
+  <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+  <link rel="stylesheet" th:href="@{/css/jquery.dataTables.css}">
+  <link rel="stylesheet" th:href="@{/css/smartadmin-production-plugins.min.css}">
+  <link rel="stylesheet" th:href="@{/css/smartadmin-production.min.css}">
+  <link rel="stylesheet" th:href="@{/css/smartadmin-skins.min.css}">
+  <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+  <style>
+    .selected {
+        background-color: #0e90d2;
+    }
+  </style>
+</head>
+<body>
+<div style="margin: 8px;">
+  <label>选择Excel文件: <input type="file" id="excelFile" onchange="fileExcelSelected()" /></label>
+  <label>选择svg文件: <input type="file" id="svgFile" onchange="fileSvgSelected()" /> </label>
+  <button style="margin-left: 20px; font-weight: bold;" onclick="doUpload()">对比</button>
+<!--  <button style="margin-left: 20px; font-weight: bold;" onclick="resolveSvg()">查看</button>-->
+</div>
+<div id="container"></div>
+<table style="margin: 10px" id="result-table" class="table table-striped table-bordered table-hover">
+  <thead>
+  <tr>
+    <th>Excel属性</th>
+    <th>Excel值</th>
+    <th>Svg属性</th>
+    <th>Svg值</th>
+    <th>是否匹配</th>
+  </tr>
+  </thead>
+  <tbody>
+  <tr>
+  </tr>
+  </tbody>
+</table>
+
+</body>
+<script>
+    // var str = "C:/Users/16873/Desktop/";
+    var str = "img/device.svg";
+    var time = null;
+    var svgDoc = null;
+    var arr = [];
+    var svgRes = null;
+    var excelRes = null;
+    var tableRes = [];
+    var tableOffset = '';
+    var correct = '是';
+    var wrong = '否';
+    function fileSvgSelected() {
+        var svgFiles = $('#svgFile')[0].files[0];
+        var fileName = svgFiles.name;
+        var suffix = fileName.substring(fileName.lastIndexOf('.') + 1);
+        if ( suffix != 'svg') {
+            alert("只能选择svg文件!")
+            return;
+        }
+    }
+  function fileSvgUploaded(path, svgHeight, svgWidth) {
+      // var ele = $('#svgFile')[0];
+      // var file = ele.files[0];
+      // console.log(file);
+      // var fileSrc = str + file.name;
+      // var fileSrc = str;
+
+      var frame =document.createElement('embed');
+      frame.type = "image/svg+xml";
+      frame.id = 'svg-content';
+      frame.width = svgWidth + 'px';
+      frame.height = svgHeight + 'px';
+      frame.src = path;
+      $('#container').append(frame);
+  }
+  function appendSvg(svgString, svgHeight, svgWidth) {
+        var height = parseFloat(svgHeight);
+        var width = parseFloat(svgWidth);
+        var viewPortWidth = window.innerWidth;
+        if (width > viewPortWidth) {
+            var scaleRate = parseFloat(((viewPortWidth / width) * 0.9).toFixed(2));
+            $('#container').css('transform', 'scale(' + scaleRate +')');
+            $('#container').css('transform-origin', '0 0');
+            tableOffset = (height * (1 -scaleRate) - 10) + 'px';
+        } else {
+            tableOffset = '';
+        }
+      $('#container')[0].innerHTML = svgString;
+  }
+  function doUpload() {
+      var svgFiles = $('#svgFile')[0].files;
+      if (svgFiles.length <= 0) {
+          alert("请先选择svg文件!")
+          return;
+      }
+      var excelFiles = $('#excelFile')[0].files;
+      if (excelFiles.length <= 0) {
+          alert("请先选择excel文件!")
+          return;
+      }
+      var formData = new FormData();
+      formData.append("file", svgFiles[0]);
+      $.ajax({
+          method: 'POST',
+          url: '/uploadFile',
+          data: formData,
+          processData: false,
+          contentType: false,
+          success: function(res) {
+              svgRes = res['attrAndValues'];
+              // fileSvgUploaded(res.path, res.height, res.width);
+              appendSvg(res.svgString, res.height, res.width);
+              var total = svgRes.length > excelRes.length ? svgRes.length : excelRes.length;
+              // tableRes = svgRes.map((val, index) => {
+              //     return Object.assign({}, excelRes[index], val);
+              // });
+              for (var i = 0; i < total; i++) {
+                  tableRes.push(Object.assign({}, excelRes[i] ? excelRes[i] : {excelAttrName: null, excelAttrVal: null}, svgRes[i] ? svgRes[i] : {svgAttrName: null, svgAttrVal: null}));
+              }
+              var table = $('#result-table').DataTable({
+                  data: tableRes,
+                  buttons: [
+                      'selectRows',
+                      'selectColumns',
+                      'selectCells'
+                  ],
+                  columns: [
+                      {data: 'excelAttrName'},
+                      {data: 'excelAttrVal'},
+                      {data: 'svgAttrName'},
+                      {data: 'svgAttrVal'},
+                      {data:  function (row) {
+                              if (row['excelAttrName'] == row['svgAttrName'] && row['excelAttrVal'] == row['svgAttrVal']) {
+                                  return '<span style="color: green">是</span>'
+                              } else {
+                                  return '<span style="color: red">否</span>'
+                              }
+                          }}
+                  ],
+                  "oLanguage": {
+                      "sProcessing" : "<span style='color:#ff0000;'><img src='/img/loading.gif'></span>",
+                      "sLoadingRecords" : "载入中...",
+                      "sSearch": '<span class="input-group-addon"><i class="glyphicon glyphicon-search"></i></span>',
+                      "sLengthMenu" : "显示 _MENU_ 项结果",
+                      "sZeroRecords" : "没有匹配结果",
+                      "sInfo" : "显示第 _START_ 至 _END_ 项结果，共 _TOTAL_ 项",
+                      "sInfoEmpty" : "显示第 0 至 0 项结果，共 0 项",
+                      "sInfoFiltered" : "(由 _MAX_ 项结果过滤)",
+                      "oPaginate": {
+                          "sPrevious": "上一页",
+                          "sNext": "下一页"
+                      },
+                      "oAria" : {
+                          "sSortAscending" : ": 以升序排列此列",
+                          "sSortDescending" : ": 以降序排列此列"
+                      }
+                  },
+                  "iDisplayLength": 10,
+              });
+              $('#result-table_filter input').addClass('form-control')
+              $('#result-table_filter span').css('background-color', 'white')
+              $('#result-table_length').append('<button style="margin-left: 10px;" class="filter-btn" onclick="searchData(' + 'wrong' + ')">异常数据</button>')
+              $('#result-table_length').append('<button style="margin-left: 10px;" class="filter-btn" onclick="searchData(' + 'correct' + ')">正常数据</button>')
+              $('#result-table_length').append('<button style="margin-left: 10px;" class="filter-btn selected" onclick="searchData()">所有数据</button>')
+              if (tableOffset) {
+                  $('#result-table_wrapper').css('transform', 'translateY(-' + tableOffset + ')');
+              }
+              $('#result-table tbody').on('click', 'tr', function () {
+                  var rowData = table.row(this).data();
+                  var attrName = rowData.svgAttrName;
+                  var attrVal = rowData.svgAttrVal;
+                  if (!attrName || !attrVal) {
+                      return;
+                  }
+                  var ele = $('*[' + attrName + '=' + '"' + attrVal  + '"]');
+                  if (ele[0].tagName === 'g') {
+                      var child = ele[0].children;
+                      if (child.length > 0) {
+                          if($(child)[0].tagName =="use" && $(child)[1].tagName =="use" && $(child)[2].tagName =="use" && $(child)[3].tagName =="use"){
+                              $(child[0]).css("display", "inline");
+                              $(child[1]).css("display", "none");
+                              $(child[2]).css("display", "none");
+                              $(child[3]).css("display", "none");
+                              setTimeout(function () {
+                                  $(child[0]).css("display", "none");
+                                  $(child[3]).css("display", "inline");
+                              }, 5000);
+                          }
+                      }
+                  }
+              });
+          }
+      })
+  }
+  function searchData(search) {
+        $('.filter-btn').removeClass('selected');
+        var th = search ? search == wrong ? 0 : 1 : 2;
+        $('.filter-btn:eq(' + th + ')').addClass('selected');
+        $('#result-table').DataTable().search(search ? search : '').draw();
+  }
+  function resolveSvg() {
+      // svgDoc = document.getElementById('svg-content').getSVGDocument();
+      // if (!svgDoc) {
+      //     time = setTimeout("resolveSvg()", 300);
+      // } else {
+      //     clearTimeout(time);
+      //     console.log('svg 加载完成');
+      //     $(svgDoc).find("*[dp_tag_label]").each(function () {
+      //             var val = $(this).attr('dp_tag_label');
+      //             arr.push(val);
+      //             console.log(val);
+      //     });
+      //     console.log('length = ' + arr.length);
+      //     // var node = svgDoc.documentElement;
+      //     // findnode(node);
+      // }
+      $("*[dp_tag_label]").each(function () {
+          var val = $(this).attr('dp_tag_label');
+          console.log(val);
+      });
+  }
+    function findnode(node) {
+        for(var i=0;i<node.childNodes.length;i++) {
+            if(node.childNodes.item(i).nodeType != 3 && node.childNodes.item(i).nodeType != 4) {
+                var child=node.childNodes.item(i);
+                var val = child.getAttribute("dp_tag_label");
+                if(val) {
+                    console.log(val);
+                }
+                if(child.childNodes) {
+                    findnode(child);
+                } else {
+                    break;
+                }
+            }
+        }
+    }
+  function fileExcelSelected() {
+      var file = $('#excelFile')[0].files[0];
+      var fileName = file.name;
+      var suffix = fileName.substring(fileName.lastIndexOf('.') + 1);
+      if ( suffix != 'xlsx') {
+          alert("只能选择excel文件!")
+          return;
+      }
+      const fileReader = new FileReader();
+      fileReader.onload = function (e) {
+          try {
+              const data = e.target.result;
+              const workbook = XLSX.read(data, {type: 'binary'});
+              var sheetName = workbook.SheetNames[0];
+              // const list = '';
+              // const listNew = list.concat(XLSX.utils.sheet_to_json(workbook.Sheets['sheets1'], {header: 1}))
+              // console.log('listNew = ' + listNew);
+              const res = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {header: 1});
+              excelRes = res.map((val, index) => {
+                  var obj = {};
+                  obj['excelAttrName'] = val[0];
+                  obj['excelAttrVal'] = val[1];
+                  return obj;
+              });
+          } catch (e) {
+              console.error(e);
+          }
+      }
+      fileReader.readAsBinaryString(file);
+  }
+</script>
+</html>
