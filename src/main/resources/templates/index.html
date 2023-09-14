@@ -23,16 +23,17 @@
   <label>选择Excel文件: <input type="file" id="excelFile" onchange="fileExcelSelected()" /></label>
   <label>选择svg文件: <input type="file" id="svgFile" onchange="fileSvgSelected()" /> </label>
   <button style="margin-left: 20px; font-weight: bold;" onclick="doUpload()">对比</button>
+  <button style="margin-left: 20px; font-weight: bold;" onclick="reloadPage()">重置</button>
 <!--  <button style="margin-left: 20px; font-weight: bold;" onclick="resolveSvg()">查看</button>-->
 </div>
 <div id="container"></div>
 <table style="margin: 10px" id="result-table" class="table table-striped table-bordered table-hover">
   <thead>
   <tr>
-    <th>Excel属性</th>
-    <th>Excel值</th>
     <th>Svg属性</th>
     <th>Svg值</th>
+    <th>Excel属性</th>
+    <th>Excel值</th>
     <th>是否匹配</th>
   </tr>
   </thead>
@@ -76,6 +77,9 @@
       frame.src = path;
       $('#container').append(frame);
   }
+  function reloadPage() {
+        window.location.reload();
+  }
   function appendSvg(svgString, svgHeight, svgWidth) {
         var height = parseFloat(svgHeight);
         var width = parseFloat(svgWidth);
@@ -113,25 +117,36 @@
               svgRes = res['attrAndValues'];
               // fileSvgUploaded(res.path, res.height, res.width);
               appendSvg(res.svgString, res.height, res.width);
-              var total = svgRes.length > excelRes.length ? svgRes.length : excelRes.length;
-              // tableRes = svgRes.map((val, index) => {
-              //     return Object.assign({}, excelRes[index], val);
-              // });
-              for (var i = 0; i < total; i++) {
-                  tableRes.push(Object.assign({}, excelRes[i] ? excelRes[i] : {excelAttrName: null, excelAttrVal: null}, svgRes[i] ? svgRes[i] : {svgAttrName: null, svgAttrVal: null}));
+              var excelFlags = [];
+              for (var i = 0; i < excelRes.length; i++) {
+                  excelFlags.push('');
+              }
+              for (var j = 0; j < svgRes.length; j++) {
+                  var matched = false;
+                  for (var k = 0; k < excelRes.length; k++) {
+                      if (svgRes[j].svgAttrName == excelRes[k].excelAttrName && svgRes[j].svgAttrVal == excelRes[k].excelAttrVal && !excelFlags[k]) {
+                          tableRes.push(Object.assign({}, svgRes[j], excelRes[k]));
+                          excelFlags[k] = '1';
+                          matched = true;
+                          break;
+                      }
+                  }
+                  if (!matched) {
+                      tableRes.push(Object.assign({}, svgRes[j], {excelAttrName: null, excelAttrVal: null}))
+                  }
+              }
+              for (var l = 0; l < excelFlags.length; l++) {
+                  if (!excelFlags[l]) {
+                      tableRes.push(Object.assign({},{svgAttrName: null, svgAttrVal: null}, excelRes[l]));
+                  }
               }
               var table = $('#result-table').DataTable({
                   data: tableRes,
-                  buttons: [
-                      'selectRows',
-                      'selectColumns',
-                      'selectCells'
-                  ],
                   columns: [
-                      {data: 'excelAttrName'},
-                      {data: 'excelAttrVal'},
                       {data: 'svgAttrName'},
                       {data: 'svgAttrVal'},
+                      {data: 'excelAttrName'},
+                      {data: 'excelAttrVal'},
                       {data:  function (row) {
                               if (row['excelAttrName'] == row['svgAttrName'] && row['excelAttrVal'] == row['svgAttrVal']) {
                                   return '<span style="color: green">是</span>'
