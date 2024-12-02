@@ -1,9 +1,13 @@
 package com.svgtopng.controller;
 
 
+import com.alibaba.fastjson2.JSON;
 import com.svgtopng.entity.SvgAttrObj;
+import com.svgtopng.entity.xdr.File_t;
 import com.svgtopng.utility.MinIoUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.acplt.oncrpc.XdrBufferDecodingStream;
+import org.acplt.oncrpc.XdrDecodingStream;
 import org.apache.batik.anim.dom.SAXSVGDocumentFactory;
 import org.apache.batik.transcoder.Transcoder;
 import org.apache.batik.transcoder.TranscoderException;
@@ -14,6 +18,7 @@ import org.apache.batik.util.XMLResourceDescriptor;
 import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -95,6 +100,33 @@ public class SvgToPngController {
     @GetMapping("/test")
     public String test() {
         return "test";
+    }
+    @GetMapping("/doXdr")
+    @ResponseBody
+    public String doXdr() throws IOException {
+        ClassPathResource resource = new ClassPathResource("LCC_Priviledge_New.003E");
+//        InputStream is = resource.getInputStream();
+        FileInputStream fis = new FileInputStream(resource.getFile());
+        int len = fis.available();
+        byte[] data = new byte[len];
+        fis.read(data, 0 , len);
+        XdrDecodingStream xdrDecodingStream = new XdrBufferDecodingStream(data);
+        String res = "";
+        try {
+            xdrDecodingStream.beginDecoding();
+            File_t ticketData = new File_t(xdrDecodingStream);
+            xdrDecodingStream.endDecoding();
+            System.out.println(JSON.toJSONString(ticketData));
+//            String jsonString = new Gson().toJson(ticketData);
+//            FileOutputStream fos = new FileOutputStream("/sdcard/Pca/Para/lccResult.txt");
+//            fos.write(jsonString.getBytes());
+//            fos.flush();
+//            fos.close();
+            res = "解析成功";
+        } catch (Exception e) {
+            res = "解析出错";
+        }
+        return res;
     }
     @PostMapping("/uploadFile")
     @ResponseBody
